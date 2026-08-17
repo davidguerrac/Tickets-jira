@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Horas - Soporte SAP | PLUZ Energía</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#16213a; --border:#2c3a54;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --accent2:#0ea5e9;
+    --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(180deg,#0b1222,#0f172a 400px); color:var(--text);
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:1000px;margin:0 auto;}
+  header{margin-bottom:24px;}
+  header h1{font-size:22px;margin:0 0 4px;}
+  header p{color:var(--muted);margin:0;font-size:14px;}
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:20px;
+  }
+  .card h2{font-size:15px;margin:0 0 16px;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
+
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+  .grid .full{grid-column:1/-1;}
+  .grid .span2{grid-column:span 2;}
+  .grid .span3{grid-column:span 3;}
+  @media(max-width:700px){.grid{grid-template-columns:1fr 1fr;} .grid .span2,.grid .span3{grid-column:span 2;}}
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  input,select,textarea{
+    width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    padding:10px 12px; border-radius:8px; font-size:14px; font-family:inherit;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  textarea{resize:vertical;min-height:44px;}
+
+  .btn{
+    background:var(--accent2); color:#04202e; border:none; padding:10px 18px;
+    border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;
+  }
+  .btn:hover{background:var(--accent);}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn.secondary:hover{border-color:var(--accent);}
+  .btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+  .btn.danger:hover{background:var(--danger);color:#fff;}
+  .actions-row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media(max-width:700px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .stat .num{font-size:22px;font-weight:700;color:var(--accent);}
+  .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .filters select,.filters input{width:auto;min-width:140px;}
+  .qf{padding:8px 14px;font-size:13px;}
+  .qf.active{background:var(--accent2);color:#04202e;border-color:var(--accent2);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    text-align:left;color:var(--muted);font-weight:600;font-size:11px;
+    text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border);
+  }
+  tbody td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tbody tr:hover{background:rgba(56,189,248,0.05);}
+  .badge{
+    display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;
+  }
+  .badge.SSAM{background:#1d4ed81a;color:#60a5fa;}
+  .badge.FSM{background:#7c3aed1a;color:#a78bfa;}
+  .badge.SuccessFactors{background:#0891b21a;color:#22d3ee;}
+  .badge.SAPAssetManager{background:#059f4a1a;color:#4ade80;}
+  .badge.PM{background:#ca8a041a;color:#facc15;}
+  .badge.Otro{background:#6b72801a;color:#9ca3af;}
+  .status{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;}
+  .status.Abierto{background:#f59e0b1a;color:#fbbf24;}
+  .status.EnProgreso{background:#38bdf81a;color:#38bdf8;}
+  .status.Cerrado{background:#22c55e1a;color:#4ade80;}
+  .ticket-link{color:var(--accent);font-weight:600;text-decoration:none;}
+  .desc{color:var(--muted);max-width:260px;}
+  .rowbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;}
+  .rowbtn:hover{color:var(--danger);}
+  .rowbtn.edit:hover{color:var(--accent);}
+  .empty{text-align:center;color:var(--muted);padding:30px;font-size:14px;}
+  .footer-note{color:var(--muted);font-size:12px;text-align:center;margin-top:20px;}
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--ok);color:#052e12;padding:10px 20px;border-radius:8px;
+    font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⏱ Registro de Horas — Soporte SAP</h1>
+    <p>PLUZ Energía · Control manual mientras el portal de horas no está disponible</p>
+  </header>
+
+  <div class="card">
+    <h2 id="form-title">Nueva entrada</h2>
+    <div class="grid">
+      <div class="span2">
+        <label>Ticket GIRA (ej. PLUZ-1234)</label>
+        <input id="f-ticket" type="text" placeholder="PLUZ-1234">
+      </div>
+      <div class="span2">
+        <label>Módulo</label>
+        <select id="f-modulo">
+          <option value="SSAM">SSAM</option>
+          <option value="FSM">FSM</option>
+          <option value="SuccessFactors">SuccessFactors</option>
+          <option value="SAPAssetManager">SAP Asset Manager</option>
+          <option value="PM">PM (Plant Maintenance)</option>
+          <option value="Otro">Otro...</option>
+        </select>
+      </div>
+      <div class="span2" id="f-modulo-otro-wrap" style="display:none;">
+        <label>Especificar módulo</label>
+        <input id="f-modulo-otro" type="text" placeholder="Nombre del módulo">
+      </div>
+      <div class="span2">
+        <label>Fecha (día del trabajo/servicio)</label>
+        <input id="f-fecha" type="date">
+      </div>
+      <div class="span2">
+        <label>Horas invertidas</label>
+        <input id="f-horas" type="number" step="0.25" min="0" placeholder="Ej. 1.5">
+      </div>
+      <div class="span2">
+        <label>Estado</label>
+        <select id="f-estado">
+          <option value="Abierto">Abierto</option>
+          <option value="EnProgreso">En progreso</option>
+          <option value="Cerrado">Cerrado</option>
+        </select>
+      </div>
+      <div class="full">
+        <label>Descripción breve (qué se hizo)</label>
+        <textarea id="f-desc" placeholder="Ej. Análisis de causa raíz de fallo de sync SAP-OMS, revisión de log ZPM005..."></textarea>
+      </div>
+    </div>
+    <div class="actions-row">
+      <button class="btn secondary" id="btn-cancel-edit" style="display:none;">Cancelar edición</button>
+      <button class="btn" id="btn-save">Guardar entrada</button>
+    </div>
+  </div>
+
+  <div class="card" id="sync-card">
+    <h2>🔄 Sincronización entre dispositivos</h2>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">
+      Usa un Gist privado de GitHub como almacén compartido. Configura esto en cada dispositivo (PC y celular)
+      con el <b>mismo token</b> y <b>mismo Gist ID</b> para que los datos se sincronicen automáticamente.
+    </p>
+    <div class="grid">
+      <div class="span3">
+        <label>GitHub Personal Access Token (scope: gist)</label>
+        <input id="sync-token" type="password" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <div class="span3">
+        <label>Gist ID (déjalo vacío la primera vez para crear uno nuevo)</label>
+        <input id="sync-gistid" type="text" placeholder="Se genera automáticamente">
+      </div>
+    </div>
+    <div class="actions-row" style="justify-content:flex-start;align-items:center;flex-wrap:wrap;">
+      <button class="btn" id="btn-sync-connect">Conectar / Guardar config</button>
+      <button class="btn secondary" id="btn-sync-now">Sincronizar ahora</button>
+      <span id="sync-status" style="font-size:12px;color:var(--muted);">Sin conectar</span>
+    </div>
+    <details style="margin-top:14px;">
+      <summary style="cursor:pointer;color:var(--accent);font-size:13px;">¿Cómo obtengo el token?</summary>
+      <ol style="color:var(--muted);font-size:13px;line-height:1.7;padding-left:18px;">
+        <li>Entra a GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)</li>
+        <li>Generate new token (classic) → marca solo el scope <b>gist</b></li>
+        <li>Copia el token (empieza con <code>ghp_</code>) y pégalo aquí</li>
+        <li>Deja "Gist ID" vacío y presiona "Conectar" → se crea el Gist automáticamente</li>
+        <li>Copia el Gist ID que aparece y úsalo en tu otro dispositivo (junto con el mismo token)</li>
+      </ol>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Resumen</h2>
+    <div class="stats">
+      <div class="stat"><div class="num" id="s-total">0</div><div class="lbl">Horas totales</div></div>
+      <div class="stat"><div class="num" id="s-tickets">0</div><div class="lbl">Tickets distintos</div></div>
+      <div class="stat"><div class="num" id="s-hoy">0</div><div class="lbl">Horas hoy</div></div>
+      <div class="stat"><div class="num" id="s-pendientes">0</div><div class="lbl">Pendientes (total)</div></div>
+    </div>
+    <div class="stats" style="margin-top:12px;">
+      <div class="stat" style="border-left:3px solid var(--warn);">
+        <div class="num" id="s-hoy-abiertos" style="color:var(--warn);">0</div>
+        <div class="lbl">Tickets abiertos/en progreso HOY</div>
+      </div>
+      <div class="stat" style="border-left:3px solid var(--ok);">
+        <div class="num" id="s-hoy-cerrados" style="color:var(--ok);">0</div>
+        <div class="lbl">Tickets cerrados HOY</div>
+      </div>
+      <div class="stat" style="border-left:3px solid var(--accent);">
+        <div class="num" id="s-hoy-total" style="color:var(--accent);">0</div>
+        <div class="lbl">Total entradas HOY</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Entradas registradas</h2>
+    <div class="filters" id="quick-filters">
+      <button class="btn secondary qf" data-qf="all" type="button">Todos</button>
+      <button class="btn secondary qf" data-qf="today" type="button">📅 Hoy (todos)</button>
+      <button class="btn secondary qf" data-qf="today-open" type="button">🟡 Hoy: abiertos</button>
+      <button class="btn secondary qf" data-qf="today-closed" type="button">🟢 Hoy: cerrados</button>
+    </div>
+    <div class="filters">
+      <select id="filter-modulo">
+        <option value="">Todos los módulos</option>
+        <option value="SSAM">SSAM</option>
+        <option value="FSM">FSM</option>
+        <option value="SuccessFactors">SuccessFactors</option>
+        <option value="SAPAssetManager">SAP Asset Manager</option>
+        <option value="PM">PM</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <select id="filter-estado">
+        <option value="">Todos los estados</option>
+        <option value="Abierto">Abierto</option>
+        <option value="EnProgreso">En progreso</option>
+        <option value="Cerrado">Cerrado</option>
+      </select>
+      <input id="filter-ticket" type="text" placeholder="Buscar por ticket...">
+      <input id="filter-fecha" type="date" title="Filtrar por fecha exacta">
+      <button class="btn secondary" id="btn-clear-filters" type="button">✕ Limpiar filtros</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Ticket</th><th>Módulo</th><th>Fecha</th><th>Horas</th>
+            <th>Estado</th><th>Descripción</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty-msg" style="display:none;">Aún no hay entradas registradas. Agrega la primera arriba ↑</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Respaldo de datos</h2>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">
+      Los datos se guardan solo en este navegador (localStorage). Exporta un respaldo en JSON periódicamente
+      por si cambias de equipo o limpias el caché.
+    </p>
+    <div class="actions-row" style="justify-content:flex-start;">
+      <button class="btn secondary" id="btn-export">Exportar JSON</button>
+      <label class="btn secondary" style="cursor:pointer;">
+        Importar JSON
+        <input type="file" id="file-import" accept="application/json" style="display:none;">
+      </label>
+      <button class="btn danger" id="btn-clear">Borrar todo</button>
+    </div>
+  </div>
+
+  <p class="footer-note">Herramienta interna de control de horas — no reemplaza el registro oficial una vez el portal se restablezca.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'sap_support_hours_log';
+const SYNC_TOKEN_KEY = 'sap_support_hours_sync_token';
+const SYNC_GISTID_KEY = 'sap_support_hours_sync_gistid';
+const GIST_FILENAME = 'registro_horas_sap.json';
+let entries = [];
+let editingId = null;
+let syncTimer = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){ entries = []; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+function uid(){
+  return 'e' + Date.now() + Math.random().toString(36).slice(2,7);
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function moduloLabel(m, other){
+  const map = {SSAM:'SSAM',FSM:'FSM',SuccessFactors:'SuccessFactors',SAPAssetManager:'SAP Asset Manager',PM:'PM',Otro: other || 'Otro'};
+  return map[m] || m;
+}
+function estadoLabel(s){
+  return {Abierto:'Abierto','EnProgreso':'En progreso',Cerrado:'Cerrado'}[s] || s;
+}
+
+const els = {
+  ticket: document.getElementById('f-ticket'),
+  modulo: document.getElementById('f-modulo'),
+  moduloOtroWrap: document.getElementById('f-modulo-otro-wrap'),
+  moduloOtro: document.getElementById('f-modulo-otro'),
+  fecha: document.getElementById('f-fecha'),
+  horas: document.getElementById('f-horas'),
+  estado: document.getElementById('f-estado'),
+  desc: document.getElementById('f-desc'),
+  btnSave: document.getElementById('btn-save'),
+  btnCancelEdit: document.getElementById('btn-cancel-edit'),
+  formTitle: document.getElementById('form-title'),
+  tbody: document.getElementById('tbody'),
+  emptyMsg: document.getElementById('empty-msg'),
+  filterModulo: document.getElementById('filter-modulo'),
+  filterEstado: document.getElementById('filter-estado'),
+  filterTicket: document.getElementById('filter-ticket'),
+  filterFecha: document.getElementById('filter-fecha'),
+};
+
+let quickFilter = 'all';
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function activityDateStr(e){
+  const ts = e.updatedAt || e.createdAt || Date.now();
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+document.querySelectorAll('.qf').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    quickFilter = btn.getAttribute('data-qf');
+    document.querySelectorAll('.qf').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    // Los filtros rápidos "Hoy" se basan en la última actualización del registro,
+    // no en el campo "Fecha" manual — así reflejan lo que realmente se tocó hoy.
+    els.filterFecha.value = '';
+    if(quickFilter !== 'all'){
+      els.filterEstado.value = '';
+    }
+    render();
+  });
+});
+
+document.getElementById('btn-clear-filters').addEventListener('click', ()=>{
+  els.filterModulo.value = '';
+  els.filterEstado.value = '';
+  els.filterTicket.value = '';
+  els.filterFecha.value = '';
+  quickFilter = 'all';
+  document.querySelectorAll('.qf').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.qf[data-qf="all"]').classList.add('active');
+  render();
+});
+
+els.modulo.addEventListener('change', ()=>{
+  els.moduloOtroWrap.style.display = els.modulo.value === 'Otro' ? 'block' : 'none';
+});
+
+function resetForm(){
+  els.ticket.value = '';
+  els.modulo.value = 'SSAM';
+  els.moduloOtroWrap.style.display = 'none';
+  els.moduloOtro.value = '';
+  els.fecha.value = new Date().toISOString().slice(0,10);
+  els.horas.value = '';
+  els.estado.value = 'Abierto';
+  els.desc.value = '';
+  editingId = null;
+  els.formTitle.textContent = 'Nueva entrada';
+  els.btnSave.textContent = 'Guardar entrada';
+  els.btnCancelEdit.style.display = 'none';
+}
+
+function validate(){
+  if(!els.ticket.value.trim()){ showToast('Falta el número de ticket'); return false; }
+  if(!els.fecha.value){ showToast('Falta la fecha'); return false; }
+  const h = parseFloat(els.horas.value);
+  if(isNaN(h) || h <= 0){ showToast('Ingresa horas válidas'); return false; }
+  if(els.modulo.value === 'Otro' && !els.moduloOtro.value.trim()){ showToast('Especifica el módulo'); return false; }
+  return true;
+}
+
+els.btnSave.addEventListener('click', ()=>{
+  if(!validate()) return;
+  const data = {
+    ticket: els.ticket.value.trim().toUpperCase(),
+    modulo: els.modulo.value,
+    moduloOtro: els.moduloOtro.value.trim(),
+    fecha: els.fecha.value,
+    horas: parseFloat(els.horas.value),
+    estado: els.estado.value,
+    desc: els.desc.value.trim(),
+  };
+  if(editingId){
+    const idx = entries.findIndex(e=>e.id===editingId);
+    if(idx>-1) entries[idx] = {...entries[idx], ...data, updatedAt: Date.now()};
+    showToast('Entrada actualizada');
+  }else{
+    entries.push({id: uid(), ...data, createdAt: Date.now(), updatedAt: Date.now()});
+    showToast('Entrada guardada');
+  }
+  save();
+  resetForm();
+  render();
+  scheduleSyncPush();
+});
+
+els.btnCancelEdit.addEventListener('click', resetForm);
+
+function editEntry(id){
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  els.ticket.value = e.ticket;
+  els.modulo.value = e.modulo;
+  els.moduloOtroWrap.style.display = e.modulo === 'Otro' ? 'block' : 'none';
+  els.moduloOtro.value = e.moduloOtro || '';
+  els.fecha.value = e.fecha;
+  els.horas.value = e.horas;
+  els.estado.value = e.estado;
+  els.desc.value = e.desc || '';
+  editingId = id;
+  els.formTitle.textContent = 'Editando entrada';
+  els.btnSave.textContent = 'Actualizar entrada';
+  els.btnCancelEdit.style.display = 'inline-block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function deleteEntry(id){
+  if(!confirm('¿Borrar esta entrada?')) return;
+  entries = entries.filter(e=>e.id!==id);
+  save();
+  render();
+  showToast('Entrada borrada');
+  scheduleSyncPush();
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function getFiltered(){
+  return entries.filter(e=>{
+    if(els.filterModulo.value && e.modulo !== els.filterModulo.value) return false;
+    if(els.filterEstado.value && e.estado !== els.filterEstado.value) return false;
+    if(els.filterTicket.value && !e.ticket.toLowerCase().includes(els.filterTicket.value.toLowerCase())) return false;
+    if(els.filterFecha.value && e.fecha !== els.filterFecha.value) return false;
+    if(quickFilter === 'today' && activityDateStr(e) !== todayStr()) return false;
+    if(quickFilter === 'today-open' && (activityDateStr(e) !== todayStr() || e.estado === 'Cerrado')) return false;
+    if(quickFilter === 'today-closed' && (activityDateStr(e) !== todayStr() || e.estado !== 'Cerrado')) return false;
+    return true;
+  }).sort((a,b)=> (b.fecha||'').localeCompare(a.fecha||'') || b.createdAt - a.createdAt);
+}
+
+function render(){
+  const list = getFiltered();
+  els.tbody.innerHTML = '';
+  els.emptyMsg.style.display = list.length ? 'none' : 'block';
+  list.forEach(e=>{
+    const tr = document.createElement('tr');
+    const modClass = e.modulo === 'SAPAssetManager' ? 'SAPAssetManager' : (e.modulo || 'Otro');
+    tr.innerHTML = `
+      <td><span class="ticket-link">${escapeHtml(e.ticket)}</span></td>
+      <td><span class="badge ${modClass}">${escapeHtml(moduloLabel(e.modulo, e.moduloOtro))}</span></td>
+      <td>${escapeHtml(e.fecha)}</td>
+      <td>${e.horas}</td>
+      <td><span class="status ${e.estado}">${escapeHtml(estadoLabel(e.estado))}</span></td>
+      <td class="desc">${escapeHtml(e.desc)}</td>
+      <td style="white-space:nowrap;">
+        <button class="rowbtn edit" data-id="${e.id}" title="Editar">✏️</button>
+        <button class="rowbtn" data-del="${e.id}" title="Borrar">🗑️</button>
+      </td>
+    `;
+    els.tbody.appendChild(tr);
+  });
+  els.tbody.querySelectorAll('[data-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>editEntry(btn.getAttribute('data-id')));
+  });
+  els.tbody.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>deleteEntry(btn.getAttribute('data-del')));
+  });
+  renderStats();
+}
+
+function renderStats(){
+  const total = entries.reduce((s,e)=>s+e.horas,0);
+  const tickets = new Set(entries.map(e=>e.ticket)).size;
+  const pendientes = entries.filter(e=>e.estado!=='Cerrado').length;
+  const today = todayStr();
+  const hoyEntries = entries.filter(e=> activityDateStr(e) === today);
+  const hoy = hoyEntries.reduce((s,e)=>s+e.horas,0);
+  const hoyAbiertosTickets = new Set(hoyEntries.filter(e=>e.estado!=='Cerrado').map(e=>e.ticket)).size;
+  const hoyCerradosTickets = new Set(hoyEntries.filter(e=>e.estado==='Cerrado').map(e=>e.ticket)).size;
+
+  document.getElementById('s-total').textContent = total.toFixed(2).replace(/\.00$/,'');
+  document.getElementById('s-tickets').textContent = tickets;
+  document.getElementById('s-hoy').textContent = hoy.toFixed(2).replace(/\.00$/,'');
+  document.getElementById('s-pendientes').textContent = pendientes;
+  document.getElementById('s-hoy-abiertos').textContent = hoyAbiertosTickets;
+  document.getElementById('s-hoy-cerrados').textContent = hoyCerradosTickets;
+  document.getElementById('s-hoy-total').textContent = hoyEntries.length;
+}
+
+[els.filterModulo, els.filterEstado, els.filterTicket, els.filterFecha].forEach(el=>{
+  el.addEventListener('input', ()=>{ quickFilter='all'; document.querySelectorAll('.qf').forEach(b=>b.classList.remove('active')); document.querySelector('.qf[data-qf="all"]').classList.add('active'); render(); });
+  el.addEventListener('change', ()=>{ quickFilter='all'; document.querySelectorAll('.qf').forEach(b=>b.classList.remove('active')); document.querySelector('.qf[data-qf="all"]').classList.add('active'); render(); });
+});
+
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `registro_horas_sap_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Respaldo exportado');
+});
+
+document.getElementById('file-import').addEventListener('change', (ev)=>{
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const imported = JSON.parse(reader.result);
+      if(!Array.isArray(imported)) throw new Error('formato inválido');
+      const existingIds = new Set(entries.map(e=>e.id));
+      let added = 0;
+      imported.forEach(item=>{
+        if(item && item.ticket && !existingIds.has(item.id)){
+          entries.push({...item, id: item.id || uid()});
+          added++;
+        }
+      });
+      save();
+      render();
+      showToast(`${added} entrada(s) importada(s)`);
+    }catch(e){
+      showToast('Archivo inválido');
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+document.getElementById('btn-clear').addEventListener('click', ()=>{
+  if(!confirm('Esto borrará TODAS las entradas guardadas en este navegador. ¿Continuar?')) return;
+  entries = [];
+  save();
+  render();
+  showToast('Todo borrado');
+  scheduleSyncPush();
+});
+
+load();
+resetForm();
+document.querySelector('.qf[data-qf="all"]').classList.add('active');
+render();
+
+// ---------- Sincronización vía GitHub Gist ----------
+const syncEls = {
+  token: document.getElementById('sync-token'),
+  gistId: document.getElementById('sync-gistid'),
+  status: document.getElementById('sync-status'),
+  btnConnect: document.getElementById('btn-sync-connect'),
+  btnNow: document.getElementById('btn-sync-now'),
+};
+
+function getSyncConfig(){
+  return {
+    token: localStorage.getItem(SYNC_TOKEN_KEY) || '',
+    gistId: localStorage.getItem(SYNC_GISTID_KEY) || '',
+  };
+}
+function setSyncStatus(msg, kind){
+  syncEls.status.textContent = msg;
+  syncEls.status.style.color = kind === 'error' ? 'var(--danger)' : kind === 'ok' ? 'var(--ok)' : 'var(--muted)';
+}
+
+function initSync(){
+  const cfg = getSyncConfig();
+  syncEls.token.value = cfg.token;
+  syncEls.gistId.value = cfg.gistId;
+  if(cfg.token && cfg.gistId){
+    setSyncStatus('Configurado. Sincronizando...', 'ok');
+    syncPull(true);
+  }
+}
+
+syncEls.btnConnect.addEventListener('click', async ()=>{
+  const token = syncEls.token.value.trim();
+  if(!token){ setSyncStatus('Ingresa un token válido', 'error'); return; }
+  localStorage.setItem(SYNC_TOKEN_KEY, token);
+  let gistId = syncEls.gistId.value.trim();
+
+  if(!gistId){
+    // Crear gist nuevo con los datos actuales
+    setSyncStatus('Creando Gist...', '');
+    try{
+      const res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github+json',
+        },
+        body: JSON.stringify({
+          description: 'Registro de horas soporte SAP - PLUZ Energía',
+          public: false,
+          files: { [GIST_FILENAME]: { content: JSON.stringify(entries, null, 2) } }
+        })
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      gistId = data.id;
+      syncEls.gistId.value = gistId;
+      localStorage.setItem(SYNC_GISTID_KEY, gistId);
+      setSyncStatus('Gist creado y conectado ✓ — copia este Gist ID en tu otro dispositivo', 'ok');
+    }catch(e){
+      setSyncStatus('Error creando Gist: revisa el token', 'error');
+      return;
+    }
+  }else{
+    localStorage.setItem(SYNC_GISTID_KEY, gistId);
+    setSyncStatus('Config guardada. Sincronizando...', '');
+    await syncPull(true);
+  }
+});
+
+syncEls.btnNow.addEventListener('click', ()=> syncPull(false, true));
+
+async function syncPull(silent, forceMerge){
+  const cfg = getSyncConfig();
+  if(!cfg.token || !cfg.gistId){ if(!silent) setSyncStatus('Configura token y Gist ID primero', 'error'); return; }
+  try{
+    setSyncStatus('Sincronizando...', '');
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github+json' }
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const file = data.files && data.files[GIST_FILENAME];
+    if(file && file.content){
+      const remote = JSON.parse(file.content);
+      if(Array.isArray(remote)){
+        entries = mergeEntries(entries, remote);
+        save();
+        render();
+      }
+    }
+    setSyncStatus('Sincronizado ✓ · ' + new Date().toLocaleTimeString(), 'ok');
+    // Si había cambios locales que el remoto no tenía, los subimos de vuelta
+    if(forceMerge) await syncPush(true);
+  }catch(e){
+    setSyncStatus('Error al sincronizar (revisa token/Gist ID)', 'error');
+  }
+}
+
+async function syncPush(silent){
+  const cfg = getSyncConfig();
+  if(!cfg.token || !cfg.gistId) return;
+  try{
+    if(!silent) setSyncStatus('Subiendo cambios...', '');
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github+json',
+      },
+      body: JSON.stringify({
+        files: { [GIST_FILENAME]: { content: JSON.stringify(entries, null, 2) } }
+      })
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    setSyncStatus('Sincronizado ✓ · ' + new Date().toLocaleTimeString(), 'ok');
+  }catch(e){
+    setSyncStatus('Error al subir cambios', 'error');
+  }
+}
+
+// Combina entradas locales y remotas por id, evitando duplicados y perdiendo la más reciente en conflicto
+function mergeEntries(local, remote){
+  const map = new Map();
+  local.forEach(e => map.set(e.id, e));
+  remote.forEach(e => {
+    const existing = map.get(e.id);
+    if(!existing || (e.updatedAt||e.createdAt||0) >= (existing.updatedAt||existing.createdAt||0)){
+      map.set(e.id, e);
+    }
+  });
+  return Array.from(map.values());
+}
+
+function scheduleSyncPush(){
+  const cfg = getSyncConfig();
+  if(!cfg.token || !cfg.gistId) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=> syncPush(false), 800);
+}
+
+initSync();
+</script>
+</body>
+</html>
